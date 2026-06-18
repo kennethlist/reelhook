@@ -1,0 +1,10 @@
+/storage/
+/data/
+/src/reelhook
+
+# Real credentials stay local; commit config.example.json instead.
+config/config.json
+config/config.local.json
+
+# Real compose file may reference local host paths; commit docker-compose.example.yml instead.
+docker-compose.yml

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="__THEME__">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ReelHook — sign in</title>
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("reelhook.theme");
+        if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="login-body">
+  <main class="login-card">
+    <div class="brand">
+      <span class="brand-mark">◆</span>
+      <h1>ReelHook</h1>
+    </div>
+    <p class="login-sub">Your personal file drive</p>
+    <form method="POST" action="/login" class="login-form">
+      <label>
+        <span>Username</span>
+        <input type="text" name="username" autocomplete="username" autofocus required>
+      </label>
+      <label>
+        <span>Password</span>
+        <input type="password" name="password" autocomplete="current-password" required>
+      </label>
+      <button type="submit">Sign in</button>
+    </form>
+    <p class="login-error" id="error" hidden>Invalid username or password.</p>
+  </main>
+  <script>
+    if (new URLSearchParams(location.search).has('error')) {
+      document.getElementById('error').hidden = false;
+    }
+  </script>
+</body>
+</html>

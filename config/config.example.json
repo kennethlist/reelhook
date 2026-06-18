@@ -1,0 +1,9 @@
+{
+  "theme": "dark",
+  "users": [
+    {
+      "username": "admin",
+      "password": "changeme"
+    }
+  ]
+}

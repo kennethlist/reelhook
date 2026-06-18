@@ -1,0 +1,20 @@
+services:
+  reelhook:
+    build: .
+    container_name: reelhook
+    restart: unless-stopped
+    # Run as your host user so files in ./storage are owned by you, not root.
+    # Override per-host with: PUID=$(id -u) PGID=$(id -g) docker compose up
+    user: "${PUID:-1000}:${PGID:-1000}"
+    ports:
+      # Bind to localhost only — not exposed to the LAN/public by default.
+      - "127.0.0.1:8080:8080"
+    environment:
+      LISTEN_ADDR: ":8080"
+      STORAGE_DIR: "/data"
+      CONFIG_PATH: "/config/config.json"
+    volumes:
+      # Your files live here on the host. Change ./storage to any local folder.
+      - ./storage:/data
+      # Auth config (read-only inside the container).
+      - ./config:/config:ro
