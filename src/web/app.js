@@ -163,7 +163,7 @@ function renderSortIndicators() {
 function renderCrumbs(p) {
   els.crumbs.innerHTML = "";
   const home = document.createElement("a");
-  home.textContent = "Home";
+  home.textContent = "home";
   home.onclick = () => load("");
   els.crumbs.appendChild(home);
   if (!p) return;

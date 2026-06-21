@@ -15,6 +15,7 @@
   --toast-bg:#1f1535;   /* dark chip; stays dark in both themes */
   --danger:  #dc2626;
   --radius: 12px;
+  --content-max: 1080px;   /* cap content width on large desktop screens */
   --shadow: 0 10px 30px rgba(91, 33, 182, 0.12);
   color-scheme: light;
 }
@@ -153,7 +154,9 @@ body {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 10px 16px;
-  padding: 16px 24px 8px;
+  padding: 16px 0 8px;
+  width: min(var(--content-max), calc(100% - 48px));
+  margin-inline: auto;
 }
 .toolbar .crumbs { padding: 0; flex: 1 1 auto; min-width: 0; }
 .toolbar-right {
@@ -213,7 +216,8 @@ body {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 10px;
-  margin: 4px 24px 0;
+  width: min(var(--content-max), calc(100% - 48px));
+  margin: 4px auto 0;
   padding: 10px 16px;
   background: var(--purple-900);
   color: #fff;
@@ -226,7 +230,8 @@ body {
 
 .filearea {
   position: relative;
-  margin: 8px 24px 40px;
+  width: min(var(--content-max), calc(100% - 48px));
+  margin: 8px auto 40px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -288,7 +293,7 @@ body {
 
 .name-cell { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .name-cell .icon { font-size: 18px; line-height: 1; flex: 0 0 auto; }
-.name-cell .label { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.name-cell .label { min-width: 0; overflow-wrap: anywhere; word-break: break-word; }
 .name-cell .dir .label { font-weight: 600; color: var(--dir-ink); }
 .dragging { opacity: 0.5; }
 
@@ -491,9 +496,10 @@ body {
   .topbar .btn { padding: 9px 10px; }
 
   .crumbs { padding: 12px 12px 6px; font-size: 14px; }
-  .bulkbar { margin: 4px 12px 0; padding: 10px 12px; }
+  .toolbar { width: calc(100% - 24px); }
+  .bulkbar { width: calc(100% - 24px); margin: 4px auto 0; padding: 10px 12px; }
   .bulkbar .btn { padding: 9px 11px; }
-  .filearea { margin: 6px 12px 32px; border-radius: 10px; }
+  .filearea { width: calc(100% - 24px); margin: 6px auto 32px; border-radius: 10px; }
 
   /* Drop the secondary columns; keep Name + Size + actions. */
   .col-kind, .cell-kind, .col-mod, .cell-mod { display: none; }
