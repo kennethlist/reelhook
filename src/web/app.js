@@ -86,14 +86,31 @@ async function api(url, opts) {
 // ---------- rendering ----------
 // Navigate into a folder (or refresh it): jumps to the first page and drops the
 // selection, which doesn't carry across folders.
-async function load(path) {
-  state.path = path || "";
+//
+// When the path actually changes we push a browser-history entry so the back
+// button walks back up the folder trail. Refreshes (rename/delete/upload, which
+// reload the same folder) and back/forward navigation pass history:false so we
+// don't pollute or fight the history stack.
+async function load(path, { history = true } = {}) {
+  path = path || "";
+  const changed = path !== state.path;
+  state.path = path;
   state.offset = 0;
   state.q = ""; // the filter is per-folder; reset it when navigating
   if (els.filterInput) els.filterInput.value = "";
   state.selected.clear();
   await fetchPage();
+  if (history && changed) {
+    const url = path ? "?path=" + encodeURIComponent(path) : location.pathname;
+    window.history.pushState({ path }, "", url);
+  }
 }
+
+// Back/forward button: re-load the folder recorded in the history entry without
+// pushing a new one.
+window.addEventListener("popstate", (ev) => {
+  load((ev.state && ev.state.path) || "", { history: false });
+});
 
 // Fetch the current page (path + sort + offset/limit). Sorting and paging both
 // happen server-side so a folder with tens of thousands of files only ever
@@ -863,4 +880,8 @@ els.pageSize.addEventListener("change", () => {
   fetchPage();
 });
 
-load("");
+// Honor a ?path= deep link on first load, and seed a baseline history entry so
+// the very first popstate has a path to return to.
+const initialPath = new URLSearchParams(location.search).get("path") || "";
+window.history.replaceState({ path: initialPath }, "", location.href);
+load(initialPath, { history: false });
