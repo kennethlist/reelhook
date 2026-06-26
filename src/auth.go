@@ -17,6 +17,22 @@ type Config struct {
 	// Theme is the default colour scheme ("light" or "dark") applied before a
 	// visitor has picked one. A per-browser choice (localStorage) overrides it.
 	Theme string `json:"theme"`
+	// Share is an optional secret token. A request carrying ?share=<token> in
+	// its query string bypasses the login form entirely. Leave empty to disable.
+	// NOTE: this is a bearer secret in a URL — it leaks into server/proxy logs
+	// and browser history, and grants full read/write/delete access, so treat
+	// any link containing it as a password.
+	Share string `json:"share"`
+}
+
+// shareOK reports whether token matches the configured share secret. An empty
+// configured secret disables the bypass (any token is rejected). The compare is
+// constant-time to avoid trivial guessing via timing.
+func (c *Config) shareOK(token string) bool {
+	if c.Share == "" {
+		return false
+	}
+	return subtle.ConstantTimeCompare([]byte(c.Share), []byte(token)) == 1
 }
 
 // theme returns the configured default scheme, falling back to "light" for any
@@ -122,6 +138,22 @@ func (a *App) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 				next(w, r)
 				return
 			}
+		}
+		// A valid ?share=<token> bypasses the login form. Mint a session and
+		// set the cookie so subsequent page and /api/ requests are authenticated
+		// without having to carry the token on every URL.
+		if a.Config.shareOK(r.URL.Query().Get("share")) {
+			tok := a.Sessions.create("share")
+			http.SetCookie(w, &http.Cookie{
+				Name:     sessionCookie,
+				Value:    tok,
+				Path:     "/",
+				HttpOnly: true,
+				SameSite: http.SameSiteLaxMode,
+				MaxAge:   int(sessionTTL.Seconds()),
+			})
+			next(w, r)
+			return
 		}
 		// API calls get a 401; page loads get redirected to login.
 		if isAPIPath(r.URL.Path) {
