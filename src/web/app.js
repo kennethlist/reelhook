@@ -588,6 +588,9 @@ function pumpUploads() {
 
 function startUpload(item) {
   item.status = "uploading";
+  item.rate = 0; // smoothed bytes/sec, from progress events
+  item._rateT = performance.now();
+  item._rateLoaded = 0;
   uploadMgr.active++;
   updateItemView(item);
 
@@ -598,7 +601,19 @@ function startUpload(item) {
   xhr.open("POST", "/api/upload?path=" + encodeURIComponent(item.path));
 
   xhr.upload.onprogress = (ev) => {
-    if (ev.lengthComputable) { item.loaded = ev.loaded; updateItemView(item); updateUploadHeader(); }
+    if (!ev.lengthComputable) return;
+    item.loaded = ev.loaded;
+    // Recompute the rate at most twice a second; exponential smoothing keeps
+    // the readout steady instead of jumping with every progress event.
+    const now = performance.now();
+    const dt = now - item._rateT;
+    if (dt >= 500) {
+      const inst = (ev.loaded - item._rateLoaded) / (dt / 1000);
+      item.rate = item.rate ? item.rate * 0.7 + inst * 0.3 : inst;
+      item._rateT = now;
+      item._rateLoaded = ev.loaded;
+    }
+    updateItemView(item); updateUploadHeader();
   };
   xhr.onload = () => {
     uploadMgr.active--;
@@ -650,12 +665,15 @@ function clearUploads() {
 }
 
 function uploadCounts() {
-  const c = { total: uploadMgr.items.length, done: 0, error: 0, canceled: 0, pending: 0, bytes: 0, loaded: 0 };
+  const c = { total: uploadMgr.items.length, done: 0, error: 0, canceled: 0, pending: 0, bytes: 0, loaded: 0, rate: 0 };
   for (const i of uploadMgr.items) {
     if (i.status === "done") c.done++;
     else if (i.status === "error") c.error++;
     else if (i.status === "canceled") c.canceled++;
-    else { c.pending++; c.bytes += i.size; c.loaded += i.loaded; }
+    else {
+      c.pending++; c.bytes += i.size; c.loaded += i.loaded;
+      if (i.status === "uploading") c.rate += i.rate || 0;
+    }
   }
   return c;
 }
@@ -749,7 +767,7 @@ function paintItem(item) {
   fill.style.width = (item.status === "done" ? 100 : pct) + "%";
 
   if (item.status === "queued") stat.textContent = "Queued";
-  else if (item.status === "uploading") stat.textContent = pct + "%";
+  else if (item.status === "uploading") stat.textContent = pct + "%" + (item.rate ? " · " + fmtSize(item.rate) + "/s" : "");
   else if (item.status === "done") stat.textContent = "✓";
   else if (item.status === "canceled") stat.textContent = "Canceled";
   else stat.textContent = item.error ? "Failed: " + item.error : "Failed";
@@ -764,7 +782,8 @@ function updateUploadHeader() {
   const c = uploadCounts();
   if (c.pending > 0) {
     const overall = c.bytes ? Math.round((c.loaded / c.bytes) * 100) : 0;
-    title.textContent = `Uploading ${c.done}/${c.total} · ${overall}%`;
+    const speed = c.rate ? ` · ${fmtSize(c.rate)}/s` : "";
+    title.textContent = `Uploading ${c.done}/${c.total} · ${overall}%${speed}`;
   } else {
     const parts = [];
     if (c.done) parts.push(`${c.done} uploaded`);
